@@ -28,10 +28,11 @@ package org.hisp.dhis.sms.parse;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-public class SMSParserException
-    extends RuntimeException
+public class SMSParserException extends RuntimeException
 {
-    private String reason;
+	private static final long serialVersionUID = 9052315407153448500L;
+
+	private String reason;
 
     public static final String NO_VALUE = "no_value";
 

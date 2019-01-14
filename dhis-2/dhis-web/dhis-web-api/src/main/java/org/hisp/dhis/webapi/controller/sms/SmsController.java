@@ -173,6 +173,21 @@ public class SmsController
         webMessageService.send( WebMessageUtils.ok( "Received SMS: " + smsId ), response, request );
     }
 
+    @RequestMapping( value = "/inboundv2", method = RequestMethod.POST, consumes = "application/json" )
+    @PreAuthorize( "hasRole('ALL') or hasRole('F_MOBILE_SETTINGS')" )
+    public void receiveSMSMessageV2( HttpServletRequest request, HttpServletResponse response )
+        throws WebMessageException, ParseException, IOException
+    {
+        IncomingSms sms = renderService.fromJson( request.getInputStream(), IncomingSms.class );
+        
+        // GEMFIXME Need a quick peek into the SMS text to get the user ... and fail here if it's not found. 
+        sms.setUser( userService.getUser(sms.getText().split(" ")[1]) );
+
+        int smsId = incomingSMSService.save( sms );
+
+        webMessageService.send( WebMessageUtils.ok( "Received SMS: " + smsId ), response, request );
+    }
+    
     @RequestMapping( value = "/import", method = RequestMethod.POST, consumes = "application/json" )
     @PreAuthorize( "hasRole('ALL') or hasRole('F_MOBILE_SETTINGS')" )
     public void importUnparsedSMSMessages( HttpServletRequest request, HttpServletResponse response )
