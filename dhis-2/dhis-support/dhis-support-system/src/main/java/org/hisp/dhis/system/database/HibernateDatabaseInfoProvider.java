@@ -36,9 +36,6 @@ import org.hisp.dhis.external.conf.DhisConfigurationProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 /**
  * @author Lars Helge Overland
  */
@@ -50,9 +47,6 @@ public class HibernateDatabaseInfoProvider
     private static final String DEL_A = "/";
     private static final String DEL_B = ":";
     private static final String DEL_C = "?";
-    private static final String POSTGRES_REGEX = "^([a-zA-Z_-]+ \\d+\\.+\\d+)? .*$";
-
-    private static final Pattern PATTERN = Pattern.compile( POSTGRES_REGEX );
 
     private DatabaseInfo info;
     
@@ -68,10 +62,11 @@ public class HibernateDatabaseInfoProvider
         
     public void init()
     {
+        checkDatabaseConnectivity();
+        
         boolean spatialSupport = isSpatialSupport();
         
-        // Check if postgis is installed. If not, fail startup.
-
+        // Check if postgis is installed. if not, fail startup
         if ( !spatialSupport && !SystemUtils.isTestRun() )
         {
             log.error( POSTGIS_MISSING_ERROR );
@@ -88,7 +83,6 @@ public class HibernateDatabaseInfoProvider
         info.setPassword( password );
         info.setUrl( url );
         info.setSpatialSupport( spatialSupport );
-        info.setDatabaseVersion( getDatabaseVersion() );
     }
     
     // -------------------------------------------------------------------------
@@ -130,28 +124,6 @@ public class HibernateDatabaseInfoProvider
      * Attempts to create a spatial database extension. Checks if spatial operations
      * are supported.
      */
-
-    private String getDatabaseVersion()
-    {
-        try
-        {
-            String version = jdbcTemplate.queryForObject( "select version();", String.class );
-
-            Matcher matcher = PATTERN.matcher( version );
-
-            if( matcher.find() )
-            {
-                version = matcher.group( 1 );
-            }
-
-            return version;
-        }
-        catch ( Exception ex )
-        {
-            return "";
-        }
-    }
-
     private boolean isSpatialSupport()
     {
         try
@@ -170,7 +142,13 @@ public class HibernateDatabaseInfoProvider
         }
         catch ( Exception ex )
         {
+            log.error( "Exception when checking postgis version:", ex );
             return false;
         }
+    }
+    
+    private void checkDatabaseConnectivity()
+    {
+        jdbcTemplate.queryForObject( "select 'checking db connection';", String.class );
     }
 }

@@ -34,6 +34,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.poi.ss.formula.functions.T;
 import org.hibernate.SessionFactory;
 import org.hisp.dhis.category.CategoryCombo;
 import org.hisp.dhis.category.CategoryOption;
@@ -428,9 +429,9 @@ public abstract class AbstractEventService
         
         ProgramStageInstance programStageInstance = getProgramStageInstance( event.getEvent() );
 
-        if (  programStageInstance != null && ( programStageInstance.isDeleted() || importOptions.getImportStrategy().isCreate() ) )
+        if (  programStageInstance != null && programStageInstance.isDeleted() )
         {
-            return new ImportSummary( ImportStatus.ERROR, "Event ID " + event.getEvent() + " was already used and/or deleted. This event can not be modified." )
+            return new ImportSummary( ImportStatus.ERROR, "Event ID " + event.getEvent() + " was already used and deleted. This event can not be modified." )
                 .setReference( event.getEvent() ).incrementIgnored();
         }
         
@@ -457,7 +458,7 @@ public abstract class AbstractEventService
                 .setReference( event.getEvent() ).incrementIgnored();
         }
         
-        programStage = programStage == null && program.isWithoutRegistration() ? program.getProgramStageByStage( 1 ) : programStage;
+        programStage = program.isWithoutRegistration() && programStage == null ? program.getProgramStageByStage( 1 ) : programStage;
 
         if ( programStage == null )
         {
@@ -486,9 +487,9 @@ public abstract class AbstractEventService
                 }
                 
                 programInstance = programInstances.get( 0 );
-            }
+            }            
             
-            if ( !programStage.getRepeatable() && programInstance.hasProgramStageInstance( programStage ) )
+            if ( !programStage.getRepeatable() && programInstance.hasActiveProgramStageInstance( programStage ) )
             {
                 return new ImportSummary( ImportStatus.ERROR, "Program stage is not repeatable and an event already exists" )
                     .setReference( event.getEvent() ).incrementIgnored();
@@ -808,13 +809,13 @@ public abstract class AbstractEventService
     public EventRows getEventRows( EventSearchParams params )
     {
         List<OrganisationUnit> organisationUnits = getOrganisationUnits( params );
-
+        
         User user = currentUserService.getCurrentUser();
 
         EventRows eventRows = new EventRows();
 
         List<EventRow> eventRowList = eventStore.getEventRows( params, organisationUnits );
-
+        
         for ( EventRow eventRow : eventRowList )
         {
             if ( trackerOwnershipAccessManager.hasAccess( user, eventRow.getTrackedEntityInstance(), eventRow.getProgram() ) )
@@ -822,7 +823,7 @@ public abstract class AbstractEventService
                 eventRows.getEventRows().add( eventRow );
             }
         }
-
+        
         return eventRows;
     }
 
@@ -1213,8 +1214,10 @@ public abstract class AbstractEventService
             {
                 completedDate = DateUtils.parseDate( event.getCompletedDate() );
             }
+
             programStageInstance.setCompletedDate( completedDate );
             programStageInstance.setStatus( EventStatus.COMPLETED );
+
         }
         else if ( event.getStatus() == EventStatus.SKIPPED )
         {
@@ -1390,9 +1393,9 @@ public abstract class AbstractEventService
         {
             return;
         }
-
+        
         List<String> errors = trackerAccessManager.canWrite( currentUserService.getCurrentUser(), programStageInstance );
-
+        
         if ( !errors.isEmpty() )
         {
             return;
@@ -1447,7 +1450,7 @@ public abstract class AbstractEventService
         if ( existsEvent )
         {
             ProgramStageInstance programStageInstance = programStageInstanceService.getProgramStageInstance( uid );
-
+            
             List<String> errors = trackerAccessManager.canWrite( currentUserService.getCurrentUser(), programStageInstance );
 
             if ( !errors.isEmpty() )
@@ -1803,8 +1806,6 @@ public abstract class AbstractEventService
                 programStageInstance = createProgramStageInstance( event, programStage, programInstance,
                     organisationUnit, dueDate, executionDate, event.getStatus().getValue(),
                     completedBy, storedBy, event.getEvent(), aoc, importOptions );
-                
-                programInstance.getProgramStageInstances().add( programStageInstance );
             }
             else
             {
@@ -1872,8 +1873,6 @@ public abstract class AbstractEventService
                 importSummary.getImportCount().incrementIgnored();
             }
         }
-        
-        programInstanceCache.put( programInstance.getUid(), programInstance );
 
         sendProgramNotification( programStageInstance, importOptions );
 

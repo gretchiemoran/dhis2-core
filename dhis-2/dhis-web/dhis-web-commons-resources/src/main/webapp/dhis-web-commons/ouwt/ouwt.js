@@ -33,7 +33,7 @@ var OU_ROOTS_KEY = "ouRoots";
 var OU_VERSION_KEY = "ouVersion";
 var OU_USERNAME_KEY = "ouUsername";
 var OU_SELECTED_KEY = "ouSelected";
-var OU_USESHORTNAME_KEY = "ouUseShortName"
+var OU_USESHORTNAME_KEY = "ouUseShortName";
 
 dhis2.ou.event.orgUnitSelected = "dhis2.ou.event.orgUnitSelected";
 
@@ -102,13 +102,12 @@ function Selection()
     this.setDisplayShortNames = function( useShortName ) {
         sessionStorage[ OU_USESHORTNAME_KEY ] = useShortName;
         subtree.reloadTree();
-    }
-
-    this.getDisplayShortNames = function() {
+    };
+     this.getDisplayShortNames = function() {
         return sessionStorage[ OU_USESHORTNAME_KEY ] 
             ? sessionStorage[ OU_USESHORTNAME_KEY ] === "true" 
             : false;
-    }
+    };
 
     this.setOfflineLevel = function( level ) {
         offlineLevel = level;

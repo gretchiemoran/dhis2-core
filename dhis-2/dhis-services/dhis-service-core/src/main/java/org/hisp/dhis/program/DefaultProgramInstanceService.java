@@ -443,7 +443,7 @@ public class DefaultProgramInstanceService
     }
 
     @Override
-    public ProgramInstance enrollTrackedEntityInstance( TrackedEntityInstance trackedEntityInstance,Program program,
+    public ProgramInstance enrollTrackedEntityInstance( TrackedEntityInstance trackedEntityInstance, Program program,
         Date enrollmentDate, Date incidentDate, OrganisationUnit organisationUnit, String uid )
     {
         // ---------------------------------------------------------------------

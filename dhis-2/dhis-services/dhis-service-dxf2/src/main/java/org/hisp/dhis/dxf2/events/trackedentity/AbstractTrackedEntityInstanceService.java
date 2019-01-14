@@ -718,33 +718,26 @@ public abstract class AbstractTrackedEntityInstanceService
         List<Relationship> create = new ArrayList<>();
         List<Relationship> update = new ArrayList<>();
         List<Relationship> delete = new ArrayList<>();
-
         List<String> relationshipUids = dtoEntityInstance.getRelationships().stream()
             .map( Relationship::getRelationship )
             .collect( Collectors.toList() );
-
         delete.addAll(
             daoEntityInstance.getRelationshipItems().stream()
                 .map( RelationshipItem::getRelationship )
-
                 // Remove items we cant write to
                 .filter(
                     relationship -> trackerAccessManager.canWrite( importOptions.getUser(), relationship ).isEmpty() )
                 .map( org.hisp.dhis.relationship.Relationship::getUid )
-
                 // Remove items we are already referencing
                 .filter( ( uid ) -> !relationshipUids.contains( uid ) )
-
                 // Create Relationships for these uids
                 .map( uid -> {
                     Relationship relationship = new Relationship();
                     relationship.setRelationship( uid );
                     return relationship;
                 } )
-
                 .collect( Collectors.toList() )
         );
-
         for ( Relationship relationship : dtoEntityInstance.getRelationships() )
         {
             if ( importOptions.getImportStrategy() == ImportStrategy.SYNC && dtoEntityInstance.isDeleted() )
@@ -756,13 +749,11 @@ public abstract class AbstractTrackedEntityInstanceService
                 org.hisp.dhis.dxf2.events.trackedentity.RelationshipItem relationshipItem = new org.hisp.dhis.dxf2.events.trackedentity.RelationshipItem();
                 relationshipItem.setTrackedEntityInstance( dtoEntityInstance );
                 relationship.setFrom( relationshipItem );
-
                 create.add( relationship );
             }
             else
             {
                 String fromUid = relationship.getFrom().getTrackedEntityInstance().getTrackedEntityInstance();
-
                 if ( fromUid.equals( daoEntityInstance.getUid() ) )
                 {
                     if ( _relationshipService.relationshipExists( relationship.getRelationship() ))
@@ -787,11 +778,9 @@ public abstract class AbstractTrackedEntityInstanceService
                 }
             }
         }
-
         importSummaries.addImportSummaries( relationshipService.addRelationships( create, importOptions ) );
         importSummaries.addImportSummaries( relationshipService.updateRelationships( update, importOptions ) );
         importSummaries.addImportSummaries( relationshipService.deleteRelationships( delete, importOptions ) );
-
         return importSummaries;
     }
 

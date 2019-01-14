@@ -1745,7 +1745,6 @@ function getOfflineDataValueJson( params )
 	json.complete = complete;
 	json.date = "";
 	json.storedBy = "";
-    json.lastUpdatedBy = "";
 		
 	for ( var i = 0; i < dataValues.length; i++ )
 	{
@@ -1966,13 +1965,13 @@ function insertDataValues( json )
         $( '#completeButton' ).attr( 'disabled', 'disabled' );
         $( '#undoButton' ).removeAttr( 'disabled' );
 
-        if ( json.lastUpdatedBy )
+        if ( json.storedBy )
         {
             $( '#infoDiv' ).show();
-            $( '#completedBy' ).html( json.lastUpdatedBy );
+            $( '#completedBy' ).html( json.storedBy );
             $( '#completedDate' ).html( json.date );
 
-            dhis2.de.currentCompletedByUser = json.lastUpdatedBy;
+            dhis2.de.currentCompletedByUser = json.storedBy;
         }
     }
     else
@@ -2082,7 +2081,7 @@ function getPreviousEntryField( field )
 // Data completeness
 // -----------------------------------------------------------------------------
 
-function registerCompleteDataSet( completedStatus )
+function registerCompleteDataSet()
 {
 	if ( !confirm( i18n_confirm_complete ) )
 	{
@@ -2095,8 +2094,6 @@ function registerCompleteDataSet( completedStatus )
 
         var cc = dhis2.de.getCurrentCategoryCombo();
         var cp = dhis2.de.getCurrentCategoryOptionsQueryValue();
-
-        params.isCompleted = completedStatus;
         
         if ( cc && cp )
         {
@@ -2113,14 +2110,14 @@ function registerCompleteDataSet( completedStatus )
             $.each( organisationUnitList, function( idx, item )
             {
                 if( item.uid )
-                {
-                    cdsr.completeDataSetRegistrations.push( {cc: params.cc, cp: params.cp, dataSet: params.ds,period: params.pe, organisationUnit: item.uid, completed: params.isCompleted} );
+                {    			  	        
+                    cdsr.completeDataSetRegistrations.push( {cc: params.cc, cp: params.cp, dataSet: params.ds,period: params.pe, organisationUnit: item.uid} );
                 }            
             } );
         }
         else
         {
-            cdsr.completeDataSetRegistrations.push( {cc: params.cc, cp: params.cp, dataSet: params.ds,period: params.pe, organisationUnit: params.ou, completed: params.isCompleted} );
+            cdsr.completeDataSetRegistrations.push( {cc: params.cc, cp: params.cp, dataSet: params.ds,period: params.pe, organisationUnit: params.ou} );
         }
 	
 	    $.ajax( {
@@ -2135,7 +2132,7 @@ function registerCompleteDataSet( completedStatus )
                 if( data && data.status == 'SUCCESS' )
                 {
                     $( document ).trigger( dhis2.de.event.completed, [ dhis2.de.currentDataSetId, params ] );
-                    disableCompleteButton( params.isCompleted );
+                    disableCompleteButton();                    
                 }
                 else if( data && data.status == 'ERROR' )
                 {
@@ -2151,7 +2148,7 @@ function registerCompleteDataSet( completedStatus )
 	        	else // Offline, keep local value
 	        	{
                     $( document ).trigger( dhis2.de.event.completed, [ dhis2.de.currentDataSetId, params ] );
-	        		disableCompleteButton( params.isCompleted );
+	        		disableCompleteButton();
 	        		setHeaderMessage( i18n_offline_notification );
 	        	}
 		    }
@@ -2188,7 +2185,7 @@ function undoCompleteDataSet()
 
     var cc = dhis2.de.getCurrentCategoryCombo();
     var cp = dhis2.de.getCurrentCategoryOptionsQueryValue();
-
+    
     var params = 
     	'?ds=' + params.ds +
     	'&pe=' + params.pe +
@@ -2209,7 +2206,7 @@ function undoCompleteDataSet()
         {
             dhis2.de.storageManager.clearCompleteDataSet( params );
             $( document ).trigger( dhis2.de.event.completed, [ dhis2.de.currentDataSetId, params ] );
-            disableCompleteButton( params );
+            disableUndoButton();         
         },
         error: function( xhr, textStatus, errorThrown )
         {
@@ -2235,17 +2232,10 @@ function disableUndoButton()
     $( '#undoButton' ).attr( 'disabled', 'disabled' );
 }
 
-function disableCompleteButton( status )
+function disableCompleteButton()
 {
-    if( status == true )
-    {
-        $( '#completeButton' ).attr( 'disabled', 'disabled' );
-        $( '#undoButton' ).removeAttr( 'disabled' );
-    }
-    else
-	{
-        disableUndoButton();
-    }
+    $( '#completeButton' ).attr( 'disabled', 'disabled' );
+    $( '#undoButton' ).removeAttr( 'disabled' );
 }
 
 function displayUserDetails()
@@ -2580,22 +2570,19 @@ function updateForms()
         .then(dhis2.de.loadOptionSets)
         .done( function() {
         	dhis2.availability.startAvailabilityCheck();
-            console.log( 'Started availability check' );
+        	console.log( 'Started availability check' );
 
-            setDisplayNamePreferences();
-
-            selection.responseReceived();
+                setDisplayNamePreferences();
+                selection.responseReceived();
         } );
 }
 
 function setDisplayNamePreferences() {
     var settings = dhis2.de.storageManager.getUserSettings();
     var useShortNames = true;
-
     if ( settings !== null ) {
         useShortNames = settings.keyAnalysisDisplayProperty === "shortName";
     }
-
     selection.setDisplayShortNames(useShortNames);
 }
 
@@ -3128,6 +3115,8 @@ function StorageManager()
         try
         {
         	localStorage[KEY_COMPLETEDATASETS] = JSON.stringify( completeDataSets );
+        	
+        	log( 'Successfully stored complete registration' );
         }
         catch ( e )
         {
@@ -3180,25 +3169,6 @@ function StorageManager()
     };
 
     /**
-     * Returns the cached user settings
-     */
-    this.getUserSettings = function()
-    {
-        return localStorage[ KEY_USER_SETTINGS ] !== null 
-            ? JSON.parse(localStorage[ KEY_USER_SETTINGS ])
-            : null;
-    }
-
-    /**
-     * Caches the user settings
-     * @param settings The user settings object (JSON) to serialize into cache
-     */
-    this.setUserSettings = function(settings)
-    {
-        localStorage[ KEY_USER_SETTINGS ] = JSON.stringify(settings);
-    }
-
-    /**
      * Indicates whether there exists data values or complete data set
      * registrations in the local storage.
      *
@@ -3230,6 +3200,24 @@ function StorageManager()
 
         return true;
     };
+
+    /**
+     * Returns the cached user settings
+     */
+    this.getUserSettings = function()
+    {
+        return localStorage[ KEY_USER_SETTINGS ] !== null 
+            ? JSON.parse(localStorage[ KEY_USER_SETTINGS ])
+            : null;
+    }
+     /**
+     * Caches the user settings
+     * @param settings The user settings object (JSON) to serialize into cache
+     */
+    this.setUserSettings = function(settings)
+    {
+        localStorage[ KEY_USER_SETTINGS ] = JSON.stringify(settings);
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -3640,18 +3628,14 @@ function getUserSetting()
     if ( dhis2.de.isOffline && settings !== null ) {
         return;
     }
-
-    var def = $.Deferred();
-
-    var url = '../api/userSettings.json?key=keyAnalysisDisplayProperty';
-
-    //Gets the user setting for whether it should display short names for org units or not.
+     var def = $.Deferred();
+     var url = '../api/userSettings.json?key=keyAnalysisDisplayProperty';
+     //Gets the user setting for whether it should display short names for org units or not.
     $.getJSON(url, function( data ) {
             console.log("User settings loaded: ", data);
             dhis2.de.storageManager.setUserSettings(data);
             def.resolve();
         }
     );
-
-    return def;
+     return def;
 }

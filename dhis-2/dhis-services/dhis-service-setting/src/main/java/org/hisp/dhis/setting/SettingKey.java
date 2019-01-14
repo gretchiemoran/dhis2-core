@@ -46,7 +46,6 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * @author Lars Helge Overland
@@ -137,7 +136,7 @@ public enum SettingKey
     CALENDAR( "keyCalendar", "iso8601", String.class ),
     DATE_FORMAT( "keyDateFormat", "yyyy-MM-dd", String.class ),
     APP_STORE_URL( "appStoreUrl", "https://www.dhis2.org/appstore", String.class ),
-    APP_STORE_INDEX_URL( "keyAppStoreIndexUrl", "https://s3-eu-west-1.amazonaws.com/dhis2-appstore/appstore.json", String.class ),
+    APP_STORE_INDEX_URL( "appStoreIndexUrl", "https://s3-eu-west-1.amazonaws.com/dhis2-appstore/appstore.json", String.class ),
     APP_STORE( "keyAppStoreUrl", "https://play.dhis2.org/appstore/", String.class ),
     APP_STORE_API_URL( "keyAppStoreApiUrl", "https://play.dhis2.org/appstore/api/apps", String.class ),
     STYLE( "keyStyle", "light_blue/light_blue.css", String.class ),
@@ -176,11 +175,7 @@ public enum SettingKey
     LOGGING_ADAPTER_KAFKA( "keyLoggingKafka", Boolean.FALSE, Boolean.class ),
     LOGGING_ADAPTER_KAFKA_LEVEL( "keyLoggingKafkaLevel", "INFO", String.class ),
     LOGGING_ADAPTER_KAFKA_FORMAT( "keyLoggingKafkaFormat", "JSON", String.class ),
-    LOGGING_ADAPTER_KAFKA_TOPIC( "keyLoggingKafkaTopic", "dhis2-log", String.class ),
-    ANALYTICS_HIDE_DAILY_PERIODS( "keyHideDailyPeriods", Boolean.FALSE, Boolean.class ),
-    ANALYTICS_HIDE_WEEKLY_PERIODS( "keyHideWeeklyPeriods", Boolean.FALSE, Boolean.class ),
-    ANALYTICS_HIDE_MONTHLY_PERIODS( "keyHideMonthlyPeriods", Boolean.FALSE, Boolean.class ),
-    ANALYTICS_HIDE_BIMONTHLY_PERIODS( "keyHideBiMonthlyPeriods", Boolean.FALSE, Boolean.class );
+    LOGGING_ADAPTER_KAFKA_TOPIC( "keyLoggingKafkaTopic", "dhis2-log", String.class );
 
     private final String name;
 
@@ -311,9 +306,9 @@ public enum SettingKey
 
     private static ImmutableSet<String> getNameSet()
     {
-        return ImmutableSet.copyOf( Sets.newHashSet( SettingKey.values() ).stream()
-            .map( s -> s.getName() )
-            .collect( Collectors.toSet() ) );
+        Set<String> names = Sets.newHashSet();
+        Sets.newHashSet( SettingKey.values() ).forEach( s -> names.add( s.getName() ) );
+        return ImmutableSet.copyOf( names );
     }
 
     // -------------------------------------------------------------------------

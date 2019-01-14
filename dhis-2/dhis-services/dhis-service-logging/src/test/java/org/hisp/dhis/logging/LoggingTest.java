@@ -29,7 +29,6 @@ package org.hisp.dhis.logging;
  */
 
 import org.hisp.dhis.DhisSpringTest;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
@@ -38,7 +37,6 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Morten Olav Hansen <mortenoh@gmail.com>
  */
-@Ignore
 public class LoggingTest extends DhisSpringTest
 {
     @Test
